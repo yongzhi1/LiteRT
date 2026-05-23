@@ -21,6 +21,12 @@ package(
     # copybara:uncomment default_applicable_licenses = ["@org_tensorflow//tensorflow:license"],
     default_visibility = ["//litert:litert_internal_users"],
 )
+config_setting(
+    name = "enable_npu_hal",
+    values = {
+        "define": "npu_hal=enabled",
+    },
+)
 
 litert_dynamic_lib(
     name = "dispatch_api",
@@ -38,7 +44,16 @@ litert_dynamic_lib(
         "openvino_shared_core.h",
         "openvino_tensor_buffer.h",
         "weight_bank_runtime.h",
-    ],
+    ] + select({
+        ":enable_npu_hal": [
+            "npu_hal_hook/npu_hal_hook.h",
+        ],
+        "//conditions:default": [],
+    }),
+    local_defines = select({
+        ":enable_npu_hal": ["ENABLE_NPU_HAL"],
+        "//conditions:default": [],
+    }),
     copts = [
         "-Os",
         "-fexceptions",
@@ -102,6 +117,7 @@ litert_dynamic_lib(
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/strings:str_format",
         "@intel_openvino//:openvino",
     ],
 )
